@@ -1,6 +1,9 @@
 import argparse
 import os
 from image_organizer import organize
+import logging
+
+logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', level=logging.DEBUG)
 
 def validate_path(path: str) -> bool:
     try:
@@ -27,7 +30,7 @@ def main() -> None:
         abs_dest = os.path.abspath(args.destination)
         organize(abs_path, abs_dest, recursive=args.recursive)
     else:
-        print("The path provided is not valid, exiting...")
+        logging.error("The path provided is not valid, exiting...")
     
 if __name__ == '__main__':
     main()
