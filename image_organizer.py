@@ -55,6 +55,13 @@ def move_image(path: str, datetime: dict, destination: str):
     if not os.path.isdir(f"{destination}/{datetime['year']}/{datetime['month']}"):
          os.makedirs(f"{destination}/{datetime['year']}/{datetime['month']}")
 
+    # check if file with the same name is already present
+    while os.path.isfile(final_file_path): 
+        logging.debug("%s alredy exists, incrementing the stats and file name", final_file_path)
+        image_stats[datetime['year']][datetime['month']] += 1
+        seq_number = f"{image_stats[datetime['year']][datetime['month']]:04}"
+        final_file_path = f"{destination}/{datetime['year']}/{datetime['month']}/{new_name}-{seq_number}{extension}"
+
     # move the image inside
     shutil.move(path, final_file_path)
 
