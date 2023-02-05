@@ -4,6 +4,9 @@ from exif import Image
 import pprint
 import logging
 
+from PIL import Image as PILImage
+from PIL import ExifTags
+
 image_stats = {}
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', level=logging.DEBUG)
 
@@ -25,6 +28,8 @@ def is_image(file: str):
     if file.endswith(".heic"):
         return True
     if file.endswith(".PNG"):
+        return True
+    if file.endswith(".bmp"):
         return True
     return False
 
@@ -66,20 +71,22 @@ def move_image(path: str, datetime: dict, destination: str):
     shutil.move(path, final_file_path)
 
 def move_unordered(path: str, destination: str):
-    if not os.path.isdir(f"{destination}/unordered"):
-        os.makedirs(f"{destination}/unordered")
+    try:
+        if not os.path.isdir(f"{destination}/unordered"):
+            os.makedirs(f"{destination}/unordered")
 
-    file_name = path.split('/')
-    file_name = file_name[-1]
-    unordered_path = destination + file_name
-    logging.debug("Unordered path of %s is %s", path, unordered_path)
-    shutil.move(path, unordered_path)
+        file_name = path.split('/')
+        file_name = file_name[-1]
+        unordered_path = f"{destination}/unordered/{file_name}"
+        logging.debug("Unordered path of %s is %s", path, unordered_path)
+        shutil.move(path, unordered_path)
+    except:
+        logging.error(f"Unable to move {path} to {unordered_path}")
 
 def extract_image_data(path: str) -> dict:
     try:
         with open(path, 'rb') as img_file: 
             img = Image(img_file)
-            # x = (img.get('datetime'))
             if img.has_exif:
                 raw_datetime = (img.get('datetime_original'))
                 datetime = parse_datetime(raw_datetime)
@@ -88,7 +95,19 @@ def extract_image_data(path: str) -> dict:
                 logging.error(f'{path} does not have EXIF, moved to unordered')
                 return None
     except:
-        logging.error(f"{path} gave an exception, move to unordered")
+        logging.debug("Using fallback method")
+        try:
+            img = PILImage.open(path)
+            img_exif = img.getexif()
+            for key, val in img_exif.items():
+                if ExifTags.TAGS[key] == 'DateTime':
+                    logging.debug(f"Fallback method found datetime: {val}")
+                    datetime = parse_datetime(val)
+                    return datetime
+            logging.error(f'{path} does not have EXIF, moved to unordered')    
+        except Exception as e:
+            logging.error(e)
+            logging.error(f"{path} gave an exception, move to unordered")
         return None
 
 def organize_image(path: str, dest: str):
